@@ -7,6 +7,9 @@ from github import Github
 
 log = logging.getLogger(__name__)
 
+class GitDataHubException(Exception):
+    pass
+
 
 class GitdatahubPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -14,6 +17,12 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IResourceController, inherit=True)
 
     # IConfigurer
+    def configure(self, config):
+        # TODO: Properly check and manage token
+        if not config['ckanext.gitdatahub.access_token']:
+            msg = 'ckanext.gitdatahub.access_token is missing from config file'
+            raise GitDataHubException(msg)
+
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
@@ -24,7 +33,6 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
     def after_create(self, context, pkg_dict):
         import ipdb; ipdb.set_trace()
         if pkg_dict['state'] == 'active':
-            # TODO: check if missing in config
             token = toolkit.config.get('ckanext.gitdatahub.access_token')
             try:
                 g = Github(token)
