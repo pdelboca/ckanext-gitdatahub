@@ -42,9 +42,12 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
         except Exception as e:
             log.exception('Cannot create datapackage.json file.')
 
-    #TODO: When updating after the creation resources are added, but not when
-    # updating an already created package.
     def after_update(self, context, pkg_dict):
+        # Get a complete dict to also save resources data.
+        pkg_dict = toolkit.get_action('package_show')(
+            {},
+            {'id': pkg_dict['id']}
+        )
         token = toolkit.config.get('ckanext.gitdatahub.access_token')
         try:
             g = Github(token)
