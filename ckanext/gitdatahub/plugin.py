@@ -3,7 +3,7 @@ import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 
-from ckanapi import datapackage
+from ckanapi.datapackage import dataset_to_datapackage
 from github import Github
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
         try:
             g = Github(token)
             repo = g.get_repo('pdelboca/gitdatahub-package')
-            body = datapackage.dataset_to_datapackage(pkg_dict)
+            body = dataset_to_datapackage(pkg_dict)
             repo.create_file(
                 'datapackage.json',
                 'Create datapackage.json',
@@ -50,7 +50,7 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
             g = Github(token)
             repo = g.get_repo('pdelboca/gitdatahub-package')
             contents = repo.get_contents("datapackage.json")
-            body = datapackage.dataset_to_datapackage(pkg_dict)
+            body = dataset_to_datapackage(pkg_dict)
             repo.update_file(
                 contents.path,
                 "Update datapackage.json",
