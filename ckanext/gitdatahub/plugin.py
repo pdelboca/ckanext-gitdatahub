@@ -18,7 +18,7 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
 
     # IConfigurer
     def configure(self, config):
-        # TODO: Properly check and manage token
+        # TODO: This doesn't work
         if not config['ckanext.gitdatahub.access_token']:
             msg = 'ckanext.gitdatahub.access_token is missing from config file'
             raise GitDataHubException(msg)
@@ -32,7 +32,8 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
         token = toolkit.config.get('ckanext.gitdatahub.access_token')
         try:
             g = Github(token)
-            repo = g.get_repo('pdelboca/gitdatahub-package')
+            auth_user = g.get_user()
+            repo = auth_user.create_repo(pkg_dict['name'], pkg_dict['notes'])
             body = dataset_to_datapackage(pkg_dict)
             repo.create_file(
                 'datapackage.json',
@@ -40,9 +41,10 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
                 json.dumps(body, indent=2)
                 )
         except Exception as e:
-            log.exception('Cannot create datapackage.json file.')
+            log.exception('Cannot create {} repository.'.format(pkg_dict['name']))
 
     def after_update(self, context, pkg_dict):
+        #TODO: What happens if user changes the package name? Should we create a new repo?
         # Get a complete dict to also save resources data.
         pkg_dict = toolkit.get_action('package_show')(
             {},
@@ -51,7 +53,8 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
         token = toolkit.config.get('ckanext.gitdatahub.access_token')
         try:
             g = Github(token)
-            repo = g.get_repo('pdelboca/gitdatahub-package')
+            auth_user = g.get_user()
+            repo = auth_user.get_repo(pkg_dict['name'])
             contents = repo.get_contents("datapackage.json")
             body = dataset_to_datapackage(pkg_dict)
             repo.update_file(
@@ -61,19 +64,16 @@ class GitdatahubPlugin(plugins.SingletonPlugin):
                 contents.sha
                 )
         except Exception as e:
-            log.exception('Cannot update datapackage.json file.')
+            log.exception('Cannot update {} repository.'.format(pkg_dict['name']))
 
     def delete(self, entity):
         token = toolkit.config.get('ckanext.gitdatahub.access_token')
         try:
             g = Github(token)
-            repo = g.get_repo("pdelboca/gitdatahub-package")
-            contents = repo.get_contents("datapackage.json")
-            repo.delete_file(
-                    contents.path,
-                    "Delete datapackage.json",
-                    contents.sha
-                    )
-            log.info("datapackage.json file deleted.")
+            auth_user = g.get_user()
+            repo = auth_user.get_repo(entity.name)
+            # Commented because dangerous to use with personal token
+            # repo.delete()
+            log.info("{} repository deleted.".format(entity.name))
         except Exception as e:
-            log.exception("Error when deleting datapackage.json file.")
+            log.exception('Cannot delete {} repository.'.format(entity.name))
